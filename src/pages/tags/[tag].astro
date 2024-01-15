@@ -5,26 +5,53 @@ import BlogPost from "../../components/BlogPost.astro";
 export async function getStaticPaths() {
     const allPosts = await Astro.glob("../posts/*.md");
 
-    return [
-        { params: { tag: "astro" }, props: { posts: allPosts } },
-        { params: { tag: "successes" }, props: { posts: allPosts } },
-        { params: { tag: "community" }, props: { posts: allPosts } },
-        { params: { tag: "blogging" }, props: { posts: allPosts } },
-        { params: { tag: "setbacks" }, props: { posts: allPosts } },
-        { params: { tag: "learning in public" }, props: { posts: allPosts } },
+    const uniqueTags = [
+        ...new Set(allPosts.map((post) => post.frontmatter.tags).flat()),
     ];
+
+    return uniqueTags.map((tag) => {
+        const filteredPosts = allPosts.filter((post) =>
+            post.frontmatter.tags.includes(tag),
+        );
+        return {
+            params: { tag },
+            props: { posts: filteredPosts, uniqueTags },
+        };
+    });
 }
 
 const { tag } = Astro.params;
-const { posts } = Astro.props;
-
-const filteredPosts = posts.filter((post) => post.frontmatter.tags?.includes(tag));
+const { posts, uniqueTags } = Astro.props;
 ---
 
+<style>
+    ul.tag-cloud {
+        display:flex;
+        flex-wrap: wrap;
+
+        list-style: none;
+        padding: 0;
+        margin: 0;
+
+        li { margin: 0 0.25rem 0.25rem 0; }
+    }
+</style>
+
 <BaseLayout pageTitle={tag}>
+
+    <h2>All tags</h2>
+    <ul class="tag-cloud">
+        {uniqueTags.map(t=><li><a href={`/tags/${t}`}><li>{t}</li></a></li>)}
+    </ul>
+
+
     <p>Posts tagged with {tag}</p>
 
     <ul>
-        {filteredPosts.map((post) => <BlogPost url={post.url} title={post.frontmatter.title} />)}
-      </ul>
+        {
+            posts.map((post) => (
+                <BlogPost url={post.url} title={post.frontmatter.title} />
+            ))
+        }
+    </ul>
 </BaseLayout>
